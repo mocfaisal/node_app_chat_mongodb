@@ -1,0 +1,132 @@
+<!--
+  Nama : Mochammad Faisal
+  NIM  : 121203006
+  Prodi: Teknik Informatika
+ -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat App - MongoDB</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <style>
+    .text-white {
+      color: white;
+    }
+
+    .timestamp {
+      font-size: 10px;
+      color: #aaa;
+    }
+
+    .bg-right {
+      background-color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">Chat App</div>
+          <div class="card-body" id="chatBody">
+            <ul class="list-group" id="messages"></ul>
+          </div>
+          <div class="card-footer">
+            <input type="text" class="form-control" id="m" placeholder="Type your message..." />
+            <button class="btn btn-primary mt-2" id="sendBtn">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pastikan bahwa protokol "http" sesuai dengan server Anda -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+  <script>
+    $(document).ready(function () {
+      const socket = io();
+
+      let username = prompt("Please enter your name:");
+      if (!username) {
+        username = "Guest";
+      }
+
+      socket.emit("setUsername", username);
+
+      // Fungsi untuk menambahkan pesan ke dalam daftar pesan
+      function addMessage(msg) {
+        const li = $('<li class="list-group-item"></li>');
+        const usernameClass = getUsernameClass(msg.username);
+        const bgColor = msg.username !== username ? "bg-light" : "bg-primary-subtle";
+        li.addClass(usernameClass).addClass(bgColor);
+
+        let timestamp = new Date().toLocaleString();
+
+        if (msg.timestamp) {
+          timestamp = new Date(msg.timestamp).toLocaleTimeString();
+        }
+
+        const messageWithTimestamp = `${msg.message} <br><span class="timestamp">${timestamp}</span>`;
+
+        li.html(`<b>${msg.username}</b><br> ${messageWithTimestamp}`);
+        $("#messages").append(li);
+
+        // Scroll ke bagian bawah jendela obrolan
+        $("#chatBody").scrollTop($("#chatBody")[0].scrollHeight);
+      }
+
+      $("#sendBtn").click(sendMessage);
+
+      $("#m").keypress(function (e) {
+        if (e.which === 13) {
+          sendMessage();
+        }
+      });
+
+      function getUsernameClass(messageUsername) {
+        return messageUsername === username ? "text-start" : "text-end";
+      }
+
+      function sendMessage() {
+        const message = $("#m").val();
+        if (message.trim() !== "") {
+          socket.emit("chat message", message);
+          $("#m").val("");
+        }
+      }
+
+      socket.on("chat message", function (res) {
+        addMessage(res);
+      });
+
+      // Listen for chat history from the server
+      socket.on("chat history", function (history) {
+        history.forEach((res) => {
+          if (res.type !== "login") {
+            // For login messages, display "login" instead of the actual message
+            // res.message = "login";
+            addMessage(res);
+          }
+
+        });
+      });
+    });
+  </script>
+</body>
+<footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <p class="text-center">Copyright &copy; 2023 - Mochammad Faisal - 121203006</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</html>
